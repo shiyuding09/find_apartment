@@ -105,16 +105,15 @@
                     $('#question').text(data);
                 },
                 300:function(data){
-                    alert(data)
-                    apt_list=JSON.parse(data);
-                    for (var i=0;i<apt_list.length;i++)
-                    {
-                        $("#"+apt_list[i]).remove()
+                    apt_list=JSON.parse(data.responseText).num;
+                    for(var i=0;i<apt_list.length;i++){
+                        house_id="#house"+i;
+                        $(house_id).remove();
                     }
                 }
             }
 
-        })
+        });
     };
 
     function buttonno(){
@@ -124,10 +123,20 @@
             type:"GET",
             url:"/get_question/"+JSON.stringify(question_answer),
             dataType:"text",
-            success:function(data){
-                $('#question').text(data)
+            statusCode:{
+                200:function(data){
+                    $('#question').text(data);
+                },
+                300:function(data){
+                    apt_list=JSON.parse(data.responseText).num;
+                    for(var i=0;i<apt_list.length;i++){
+                        house_id="#house"+i;
+                        $(house_id).remove();
+                    }
+
+                }
             }
-        })
+        });
     };
     function whenClicked(e) {
         // e = event
@@ -143,7 +152,9 @@
         var num_string="house"+num.toString();
         var item=document.getElementById(num_string);
         var wrapper=document.getElementById("house-wrapper-list");
-        wrapper.scrollTo(0,item.offsetTop);
+        if(item!=null){
+            wrapper.scrollTo(0,item.offsetTop);
+        }
         $.ajax({
             type:"GET",
             url:"/get_point/"+num,
