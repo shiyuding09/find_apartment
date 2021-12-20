@@ -9,7 +9,7 @@ os.chdir(current_dir)
 with open("apartments.json",'r') as f:
     apt_dict=json.load(f)
 
-api_key="AIzaSyD7mVOSuBNPWrsqABz28q9n5YCd57_4fzA"
+api_key=""
 url="https://maps.googleapis.com/maps/api/geocode/json"
 
 parameters=dict.fromkeys(("address","key"))
