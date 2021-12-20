@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>index</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+
+</head>
+
+<style>
+    header{
+        background-color: #5580A0;
+        height:58px;
+        margin:0px;
+        padding-top:12px;
+        padding-left:30px;
+    }
+    body{
+        margin:0px;
+        padding:0px;
+        background-color:#B1D0E0;
+    }
+</style>
+<body>
+<header><p class="header">Find your apartment </p></header>
+<div class="whole-wrapper">
+    <div id="map" class="map">
+
+    </div>
+    <div class="question-box">
+        <p class="question" id="question">
+            Do you want a 1 bedroom house or studio?
+        </p>
+        <div class="button-collection">
+            <button type="button" class="yes-button" onclick="buttonyes()">Yes</button>
+            <button type="button" class="no-button" onclick="buttonno()">No</button>
+        </div>
+        </div>
+    <div class="house-wrapper-list" id="house-wrapper-list">
+        {% for i in range(315) %}
+        <li class="house-wrapper">
+            <div class="house-info" id={{apt_list['num'][i]}}>
+                <header class="house-header">
+                    <a class="house-name" href={{apt_list['url'][i]}}>{{apt_list['name'][i]}}</a>
+                    <p class="house-address">{{apt_list['address'][i]}}</p>
+                    <hr/>
+                </header>
+                <div class="property-content">
+                    {% if apt_list['photo'][i]!="no data" %}
+                    <img src={{apt_list['photo'][i]}} width="50%" height="200px">
+                    {% else %}
+                    <img src="" width="50%" height="200px">
+                    {% endif %}
+
+                    <div class="house-type">
+                        <table>
+                            <tr>
+                                <th>floor plan</th>
+                                <th>price</th>
+                            </tr>
+                            {% for j in range(apt_list['house_type'][i]) %}
+                            <tr>
+                                <td>{{apt_list['floor_plans'][i]['floor_type'][j]}}</td>
+                                <td>{{apt_list['floor_plans'][i]['price_range'][j]}}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    <div class="house-amenity">
+                        <p>{{apt_list['amenities'][i]}}</p>
+                    </div>
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+    </div>
+    <div class="plot-container" id="plot-container">
+        <header class="plot-header">
+            Number of nearby points of interest
+        </header>
+
+        <div class="plot" id="plot">
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    question_num=0
+    question_answer=new Array()
+    var map=L.map('map').setView([42.277707126289606, -83.73139195120011],12);
+    var base_layer =L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', {foo: 'bar', attribution: '&copy; <a    href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+    function buttonyes(){
+        question_answer[question_num]=1;
+        question_num=question_num+1;
+        $.ajax({
+            type:"GET",
+            url:"/get_question/"+JSON.stringify(question_answer),
+            dataType:"text",
+            statusCode:{
+                200:function(data){
+                    $('#question').text(data);
+                },
+                300:function(data){
+                    alert(data)
+                    apt_list=JSON.parse(data);
+                    for (var i=0;i<apt_list.length;i++)
+                    {
+                        $("#"+apt_list[i]).remove()
+                    }
+                }
+            }
+
+        })
+    };
+
+    function buttonno(){
+        question_answer[question_num]=2;
+        question_num=question_num+1;
+        $.ajax({
+            type:"GET",
+            url:"/get_question/"+JSON.stringify(question_answer),
+            dataType:"text",
+            success:function(data){
+                $('#question').text(data)
+            }
+        })
+    };
+    function whenClicked(e) {
+        // e = event
+        var num=e.target.feature.properties.num;
+        // You can make your ajax call declaration here
+        var layout = {
+            autosize: false,
+            width:200,
+            height:180,
+            paper_bgcolor: '#7f7f7f',
+            plot_bgcolor: '#c7c7c7'
+        };
+        var num_string="house"+num.toString();
+        var item=document.getElementById(num_string);
+        var wrapper=document.getElementById("house-wrapper-list");
+        wrapper.scrollTo(0,item.offsetTop);
+        $.ajax({
+            type:"GET",
+            url:"/get_point/"+num,
+            dataType:"text",
+            success:function(data){
+                var option=data;
+                option=JSON.parse(option);
+                var chartDom = document.getElementById('plot');
+                var myChart = echarts.init(chartDom);
+                option && myChart.setOption(option);
+            }
+        })
+    };
+
+    var onEachFeature=function(feature, layer) {
+        if (feature.properties && feature.properties.popup) {
+            layer.bindPopup(feature.properties.popup);
+            layer.on({
+                click: whenClicked
+            });
+        }
+    };
+    $.ajax("{{ url_for('static', filename='data/apt_geojson.geojson')}}", {
+        dataType: "json",
+        success: function(response){
+            var geojsonFeature = response;
+
+            var house_layer=L.geoJSON(response, {
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        }
+    });
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
