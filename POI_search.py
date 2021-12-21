@@ -4,7 +4,7 @@ import os
 
 base_url="https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 parameters=dict.fromkeys(("location","radius","type","key"))
-parameters["key"]="AIzaSyD7mVOSuBNPWrsqABz28q9n5YCd57_4fzA"
+parameters["key"]=""
 parameters["radius"]=800
 search_type=["gym","restaurant","store"]
 
